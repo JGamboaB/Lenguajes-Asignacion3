@@ -2,91 +2,99 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"math/rand"
+	"strconv"
+	"sync"
+	"time"
+
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
+	"github.com/lxn/win"
+)
+
+const (
+	BAR_WIDTH = 1
+	FONT_WIDTH = 8
+	FONT_HEIGHT = 16
+	MAX_NUMBER_SIZE = 32
+)
+
+var (
+	width int = int(win.GetSystemMetrics(win.SM_CXSCREEN) / FONT_WIDTH)
+	height int = int(win.GetSystemMetrics(win.SM_CYSCREEN) / (FONT_HEIGHT*3))
+	m sync.Mutex
+
+	// Charts
+	bsChart widgets.BarChart
+	ssChart widgets.BarChart
+	isChart widgets.BarChart
+	qsChart widgets.BarChart
+	hsChart widgets.BarChart
+
+	//Values per algorithm
+	bsTime time.Duration
+	bsSwaps = 0
+	bsComparisons = 0
+	bsIterations = 0
+
+	ssTime time.Duration
+	ssSwaps = 0
+	ssComparisons = 0
+	ssIterations = 0
+
+	isTime time.Duration
+	isSwaps = 0
+	isComparisons = 0
+	isIterations = 0
+
+	qsTime time.Duration
+	qsSwaps = 0
+	qsComparisons = 0
+	qsIterations = 0
+
+	hsTime time.Duration
+	hsSwaps = 0
+	hsComparisons = 0
+	hsIterations = 0
 )
 
 func main(){
 	//Pedir n (intervalo 10 a 100)
-	//Semilla: entrada de datos por teclado o segundos y decimas del reloj del sistema -> convertido a num entre 0 y 599
+	//Semilla: entrada de datos por teclado o segundos y decimas del reloj del sistema
 	//Arreglo base
 
-	arr := []int{-12,32,99,67,-83,123, 1, -8923, 23}
-	heapSort(&arr)
-	fmt.Println(arr)
+	//arregloBase := temporalRANDOM(100)
 
+	barNumber := width / BAR_WIDTH - 1
+	fmt.Print("Indique la cantidad de numeros(Se recomienda " + strconv.Itoa(barNumber) +" maximo para una visualizacion correcta): ")
+
+	var size int
+	fmt.Scanln(&size)
+	if err := ui.Init(); err != nil{
+		log.Fatalf("failed to initialize termui: %v", err)
+	}
+
+	arregloBase := temporalRANDOM(size) // CAMBIAR TEMPORAL
+	initBSChart(arregloBase)
+	ui.Render(&bsChart)
+	bsChartDrawer(arregloBase)
+	fmt.Scanln()
+	ui.Close()
 }
 
-/*
-Función generadora de arreglos de tamaño n que contengan números pseudo-aleatorios 
-obtenidos mediante el método de congruencia lineal multiplicativa, a partir de una semilla dada. La semilla 
-deberá ser un número primo entre 11 y 101. Los valores generados deben ser convertidos al intervalo 0 .. 29. 
-El período debe ser ≥ 2048. n puede ser cualquier número en el intervalo 10 .. 100
-*/
-
-func RandArray(n int, seed int, k int, m int) []int {
-	
-	// Validating "n"
-	
-	/*
-	if n < 10 || n > 100 { \ \ \ Cambio
-		fmt.Println("El valor n es incorrecto")
-		return nil
-	}
-	*/
-	
-	// Validating Seed
-	if seed < 11 || seed > 101 {
-		fmt.Println("El valor de la semilla es incorrecto")
-		return nil
-	}
-
-	for i := 2; i < seed; i++ {	// Prime Number
-		if seed % i == 0 {
-			fmt.Println("El valor de la semilla es incorrecto")
-			return nil
-		}
-	}
-
-	// Validating "k"
-	if k < 0 {
-		fmt.Println("El valor k es incorrecto")
-		return nil
-	}
-
-	// Validating "m"
-	if m < 2048 {
-		fmt.Println("El valor m es incorrecto")
-		return nil
-	}
-	
-	arr := make([]int, n)
-	a := 8*k + 3	// 8k + 5 can also be used
-	//first := seed
-
-	for i := 0; i < n; i++ {	// Generating the Array
-		num := (a * seed) % m	// Main Algorithm, X = (a * [seed or previous number]) % m
-		num = num % 30	// Changed to 0..30 \ \ \ Cambio
-
-		/*
-		if num == first && i != 0{	// We can stop the loop to avoid repeating the pattern
-			arr = arr[:i]
-			break
-		}
-		*/
-
-		arr[i] = num
-		seed = num	// Seed is now the previous number
-	}
-
-	fmt.Println("Resultado: ", arr)
-
-	return arr
+func temporalRANDOM(n int) []float64{
+	arr := make([]float64, n)
+	for i := 0; i < n; i++{
+		arr[i] = float64(rand.Intn(30))
+	}; return arr
 }
 
-// / / / / / / Sorting \ \ \ \ \ \
+// / / / / / / Sorting \ \ \ \ \ \ 
 
 // Bubblesort >> New <<
 
-func bubbleSort(arr *[]int) {
+func bubbleSort(arr *[]float64, pair chan []int) {
 	arr2 := *arr
 	len := len(arr2)
 
@@ -96,11 +104,13 @@ func bubbleSort(arr *[]int) {
 			// Move from 0 to len-i-1 and swap if element is greater than the next one
 			if arr2[j] > arr2[j+1] {
 				arr2[j], arr2[j+1] = arr2[j+1], arr2[j]
+				pair <- []int{j, j+1}
 			}
 		}
 	}
 
-	*arr = arr2 // Assign changes to original array
+	//*arr = arr2 // Assign changes to original array
+	close(pair)
 }
 
 // Selection (changes indexes)
@@ -146,7 +156,7 @@ func insertionSort(arr *[] int) {
 	*arr = arr2 // Assign changes to original array
 }
 
-// Quicksort [iterative for drawing]
+// Quicksort [iterative for drawing]: https://www.geeksforgeeks.org/iterative-quick-sort/
 
 func partition(arr *[]int, low int, high int) int { //
 	arr2 := *arr
@@ -169,8 +179,7 @@ func partition(arr *[]int, low int, high int) int { //
 	return i + 1 //new pivot
 }
 
-
-func quickSort(arr *[]int){ //based on: https://www.geeksforgeeks.org/iterative-quick-sort/
+func quickSort(arr *[]int){
 	low := 0; high := len(*arr) - 1
 	stack := make([]int, high+1) //Auxiliary stack
 
@@ -257,3 +266,56 @@ func heapSort(arr *[]int){
 
 // / / / / / / Graphic \ \ \ \ \ \
 
+func generateLabels(arr []float64) []string {
+	var labels = make([]string, len(arr))
+	for i := range arr {
+		labels[i] = strconv.Itoa(i)
+	}; return labels
+}
+
+func swap (a *float64, b *float64){
+	temp := *a
+	*a = *b
+	*b = temp
+}
+
+func bsChartDrawer(slice []float64){
+	bsChart.Data = make([]float64, len(slice))
+	copy(bsChart.Data, slice)
+	copyArr := make([]float64, len(slice))
+	copy(copyArr, bsChart.Data)
+	pairsChannel := make(chan []int, 1000)
+	go bubbleSort(&copyArr, pairsChannel)
+
+	for pair := range pairsChannel{
+		swap(&bsChart.Data[pair[0]], &bsChart.Data[pair[1]])
+		m.Lock()
+		ui.Render(&bsChart)
+		m.Unlock()
+	}
+
+	bsChart.Title = "BubbleSort-Finalizado-" +
+		"Tiempo:"+strconv.FormatInt(bsTime.Milliseconds(),10)+"ms-" +
+		"Swaps:"+strconv.Itoa(bsSwaps)+"-" +
+		"Comparaciones:"+strconv.Itoa(bsComparisons)+"-"+
+		"Iteraciones:"+strconv.Itoa(bsIterations)
+	m.Lock()
+	ui.Render(&bsChart)
+	m.Unlock()
+	fmt.Println(slice)
+	fmt.Println(bsChart.Data)
+}
+
+func initBSChart(arr []float64){
+	bsChart = *widgets.NewBarChart()
+	bsChart.Data = arr
+	bsChart.Title = "BubbleSort"
+	bsChart.SetRect(0, 0, width/2 - 2, height-2)
+	bsChart.BarWidth = BAR_WIDTH
+	bsChart.BarGap = 0
+	bsChart.Labels = generateLabels(arr)
+	bsChart.LabelStyles = []ui.Style{ui.NewStyle(ui.ColorWhite)}
+	bsChart.BorderBottom = false
+	bsChart.BarColors = []ui.Color{ui.ColorRed}
+	bsChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorBlack)}
+}
