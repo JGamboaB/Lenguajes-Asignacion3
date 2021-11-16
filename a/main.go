@@ -66,7 +66,9 @@ func main(){
 	//Arreglo base
 
 	//arregloBase := temporalRANDOM(100)
-	fmt.Print("Indique la cantidad de numeros(Se recomienda 100 maximo para una visualizacion correcta): ")
+
+	barNumber := width / BAR_WIDTH - 1
+	fmt.Print("Indique la cantidad de numeros(Se recomienda " + strconv.Itoa(barNumber) +" maximo para una visualizacion correcta): ")
 
 	var size int
 	fmt.Scanln(&size)
@@ -74,31 +76,13 @@ func main(){
 		log.Fatalf("failed to initialize termui: %v", err)
 	}
 
-	//Slice
 	arregloBase := temporalRANDOM(size) // CAMBIAR TEMPORAL
-
-	//Init
 	initBSChart(arregloBase)
 	initSSChart(arregloBase)
-	initISChart(arregloBase)
-	initQSChart(arregloBase)
-	initHSChart(arregloBase)
-
 	ui.Render(&bsChart)
 	ui.Render(&ssChart)
-	ui.Render(&isChart)
-	ui.Render(&qsChart)
-	ui.Render(&hsChart)
-
-	//Goroutines & Drawing Start
 	go bsChartDrawer(arregloBase)
-	go ssChartDrawer(arregloBase)
-	go isChartDrawer(arregloBase)
-	go qsChartDrawer(arregloBase)
-	hsChartDrawer(arregloBase)
-
-	//Ending
-	//Sound ?
+	ssChartDrawer(arregloBase)
 	fmt.Scanln()
 	ui.Close()
 }
@@ -135,7 +119,7 @@ func bubbleSort(arr *[]float64, pair chan []int) {
 
 // Selection (changes indexes)
 
-func selectionSort(arr *[]float64, pair chan []int) {
+func selectionSort(arr *[]int) {
 	arr2 := *arr
 	len := len(arr2)
 
@@ -150,16 +134,14 @@ func selectionSort(arr *[]float64, pair chan []int) {
 
 		//Swap numbers
 		arr2[currentIndex], arr2[indexMin] = arr2[indexMin], arr2[currentIndex]
-		pair <- []int{currentIndex, indexMin}
 	}
 
 	*arr = arr2 // Assign changes to original array
-	close(pair)
 }
 
 // Insertion >> New <<
 
-func insertionSort(arr *[]float64, oneWay chan []int) {
+func insertionSort(arr *[] int) {
 	arr2 := *arr
 	len := len(arr2)
 
@@ -169,22 +151,18 @@ func insertionSort(arr *[]float64, oneWay chan []int) {
 
 		//Move greater elements of arr[0 .. i-1] to position ahead of current
 		for ; j >= 0 && key < arr2[j]; j--{
-			oneWay <- []int{j+1, int(arr2[j])}
 			arr2[j+1] = arr2[j]
 		}
 
-		oneWay <- []int{j+1, int(key)}
 		arr2[j+1] = key
-
 	}
 
 	*arr = arr2 // Assign changes to original array
-	close(oneWay)
 }
 
 // Quicksort [iterative for drawing]: https://www.geeksforgeeks.org/iterative-quick-sort/
 
-func partition(arr *[]float64, low int, high int, pair chan []int) int { //
+func partition(arr *[]int, low int, high int) int { //
 	arr2 := *arr
 	pivot := arr2[high]
 
@@ -194,20 +172,18 @@ func partition(arr *[]float64, low int, high int, pair chan []int) int { //
 		if arr2[j] <= pivot {
 			i++
 			arr2[i], arr2[j] = arr2[j], arr2[i] //Gets the lesser values to the left of the pivot
-			pair <- []int{i, j}
 		}
 	}
 
 	//Swap pivot with the next element to i
 	arr2[i+1], arr2[high] = arr2[high], arr2[i+1]
-	pair <- []int{i+1, high}
 
 	*arr = arr2 // Assign changes to original array
 
 	return i + 1 //new pivot
 }
 
-func quickSort(arr *[]float64, pair chan []int){
+func quickSort(arr *[]int){
 	low := 0; high := len(*arr) - 1
 	stack := make([]int, high+1) //Auxiliary stack
 
@@ -226,7 +202,7 @@ func quickSort(arr *[]float64, pair chan []int){
 		low = stack[top]
 		top--
 
-		pivot := partition(arr, low, high, pair) //pivot at correct position
+		pivot := partition(arr, low, high) //pivot at correct position
 
 		if pivot-1 > low { //If elements on left push left side to stack
 			top++
@@ -242,13 +218,11 @@ func quickSort(arr *[]float64, pair chan []int){
 			stack[top] = high
 		}
 	}
-
-	close(pair)
 }
 
 // Heapsort >> New << [iteraive just in case]: https://www.geeksforgeeks.org/iterative-heap-sort/
 
-func buildMaxHeap(arr *[]float64, n int, pair chan []int){
+func buildMaxHeap(arr *[]int, n int){
 	arr2 := *arr
 	for i := 1; i < n; i++{
 		if arr2[i] > arr2[(i-1)/2]{ // Child bigger than parent
@@ -256,7 +230,6 @@ func buildMaxHeap(arr *[]float64, n int, pair chan []int){
 
 			for arr2[j] > arr2[(j-1)/2]{ //Swap until parent is smaller than child
 				arr2[j], arr2[(j-1)/2] = arr2[(j-1)/2], arr2[j]
-				pair <- []int{j, (j-1)/2}
 				j = (j-1)/2
 			}
 		}
@@ -265,10 +238,10 @@ func buildMaxHeap(arr *[]float64, n int, pair chan []int){
 	*arr = arr2
 }
 
-func heapSort(arr *[]float64, pair chan []int){
+func heapSort(arr *[]int){
 	n := len(*arr)
 
-	buildMaxHeap(arr, n, pair)
+	buildMaxHeap(arr, n)
 	arr2 := *arr
 
 	for i := n-1; i > 0; i--{
@@ -282,7 +255,6 @@ func heapSort(arr *[]float64, pair chan []int){
 				index++
 			}; if index < i && arr2[j] < arr2[index]{
 				arr2[j], arr2[index] = arr2[index], arr2[j]
-				pair <- []int{j, index}
 			}; j = index
 
 			if index >= i{
@@ -293,7 +265,6 @@ func heapSort(arr *[]float64, pair chan []int){
 	}
 
 	*arr = arr2
-	close(pair)
 }
 
 
@@ -304,12 +275,10 @@ func heapSort(arr *[]float64, pair chan []int){
 func initBSChart(arr []float64){
 	bsChart = *widgets.NewBarChart()
 	bsChart.Data = arr
-	bsChart.BarWidth = BAR_WIDTH
-	bsChart.BarGap = 0
-	
-	//Changes per Chart
 	bsChart.Title = "BubbleSort"
 	bsChart.SetRect(0, 0, width/2 - 2, height-2)
+	bsChart.BarWidth = BAR_WIDTH
+	bsChart.BarGap = 0
 	bsChart.BarColors = []ui.Color{ui.ColorRed}
 	bsChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorRed)} // Can't be seen
 
@@ -321,54 +290,17 @@ func initBSChart(arr []float64){
 func initSSChart(arr []float64){
 	ssChart = *widgets.NewBarChart()
 	ssChart.Data = arr
-	ssChart.BarWidth = BAR_WIDTH
-	ssChart.BarGap = 0
-
-	//Changes per Chart
 	ssChart.Title = "SelectionSort"
 	ssChart.SetRect(width/2, 0, width - 4, height-2)
-	ssChart.BarColors = []ui.Color{ui.ColorCyan}
-	ssChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorCyan)} // Can't be seen
+	ssChart.BarWidth = BAR_WIDTH
+	ssChart.BarGap = 0
+	ssChart.BarColors = []ui.Color{ui.ColorBlue}
+	ssChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorBlue)} // Can't be seen
 }
 
-func initISChart(arr []float64){
-	isChart = *widgets.NewBarChart()
-	isChart.Data = arr
-	isChart.BarWidth = BAR_WIDTH
-	isChart.BarGap = 0
 
-	//Changes per Chart
-	isChart.Title = "InsertionSort"
-	isChart.SetRect(0, height-2, width/2 - 2, height*2-4)
-	isChart.BarColors = []ui.Color{ui.ColorGreen}
-	isChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorGreen)} // Can't be seen
-}
 
-func initQSChart(arr []float64){
-	qsChart = *widgets.NewBarChart()
-	qsChart.Data = arr
-	qsChart.BarWidth = BAR_WIDTH
-	qsChart.BarGap = 0
 
-	//Changes per Chart
-	qsChart.Title = "QuickSort"
-	qsChart.SetRect(width/2, height-2, width - 4, height*2-4)
-	qsChart.BarColors = []ui.Color{ui.ColorMagenta}
-	qsChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorMagenta)} // Can't be seen
-}
-
-func initHSChart(arr []float64){
-	hsChart = *widgets.NewBarChart()
-	hsChart.Data = arr
-	hsChart.BarWidth = BAR_WIDTH
-	hsChart.BarGap = 0
-
-	//Changes per Chart
-	hsChart.Title = "HeapSort"
-	hsChart.SetRect(0, height*2-4, width-4, height*3-1)
-	hsChart.BarColors = []ui.Color{ui.ColorYellow}
-	hsChart.NumStyles = []ui.Style{ui.NewStyle(ui.ColorYellow)} // Can't be seen
-}
 
 // / / / / Drawing 
 
@@ -402,6 +334,9 @@ func bsChartDrawer(slice []float64){
 	m.Lock()
 	ui.Render(&bsChart)
 	m.Unlock()
+	
+	//fmt.Println(slice)
+	//fmt.Println(bsChart.Data)
 }
 
 func ssChartDrawer(slice []float64){
@@ -415,7 +350,7 @@ func ssChartDrawer(slice []float64){
 
 	//Channel
 	pairsChannel := make(chan []int, 1000)
-	go selectionSort(&copyArr, pairsChannel)
+	go bubbleSort(&copyArr, pairsChannel)
 
 	//Update Changes in pairs
 	for pair := range pairsChannel{
@@ -426,7 +361,7 @@ func ssChartDrawer(slice []float64){
 	}
 
 	//End
-	ssChart.Title = "SelectionSort-Finalizado-" +
+	ssChart.Title = "BubbleSort-Finalizado-" +
 		"Tiempo:"+strconv.FormatInt(ssTime.Milliseconds(),10)+"ms-" +
 		"Swaps:"+strconv.Itoa(ssSwaps)+"-" +
 		"Comparaciones:"+strconv.Itoa(ssComparisons)+"-"+
@@ -434,102 +369,9 @@ func ssChartDrawer(slice []float64){
 	m.Lock()
 	ui.Render(&ssChart)
 	m.Unlock()
-}
-
-func isChartDrawer(slice []float64){
-	// / / isChart.Data = slice
-	isChart.Data = make([]float64, len(slice))
-	copy(isChart.Data, slice)
-
-	//Copy used in SelectionSort
-	copyArr := make([]float64, len(slice))
-	copy(copyArr, isChart.Data)
-
-	//Channel
-	oneWayChannel := make(chan []int, 1000)
-	go insertionSort(&copyArr, oneWayChannel)
-
-	//Update Changes in pairs
-	for oneWay := range oneWayChannel{
-		isChart.Data[oneWay[0]] = float64(oneWay[1])//isChart.Data[oneWay[1]]
-		m.Lock()
-		ui.Render(&isChart)
-		m.Unlock()
-	}
-
-	//End
-	isChart.Title = "InsertionSort-Finalizado-" +
-		"Tiempo:"+strconv.FormatInt(isTime.Milliseconds(),10)+"ms-" +
-		"Swaps:"+strconv.Itoa(isSwaps)+"-" +
-		"Comparaciones:"+strconv.Itoa(isComparisons)+"-"+
-		"Iteraciones:"+strconv.Itoa(isIterations)
-	m.Lock()
-	ui.Render(&isChart)
-	m.Unlock()
-}
-
-func qsChartDrawer(slice []float64){
-	// / / qsChart.Data = slice
-	qsChart.Data = make([]float64, len(slice))
-	copy(qsChart.Data, slice)
-
-	//Copy used in SelectionSort
-	copyArr := make([]float64, len(slice))
-	copy(copyArr, qsChart.Data)
-
-	//Channel
-	pairsChannel := make(chan []int, 1000)
-	go quickSort(&copyArr, pairsChannel)
-
-	//Update Changes in pairs
-	for pair := range pairsChannel{
-		swap(&qsChart.Data[pair[0]], &qsChart.Data[pair[1]])
-		m.Lock()
-		ui.Render(&qsChart)
-		m.Unlock()
-	}
-
-	//End
-	qsChart.Title = "QuickSort-Finalizado-" +
-		"Tiempo:"+strconv.FormatInt(qsTime.Milliseconds(),10)+"ms-" +
-		"Swaps:"+strconv.Itoa(qsSwaps)+"-" +
-		"Comparaciones:"+strconv.Itoa(qsComparisons)+"-"+
-		"Iteraciones:"+strconv.Itoa(qsIterations)
-	m.Lock()
-	ui.Render(&qsChart)
-	m.Unlock()
-}
-
-func hsChartDrawer(slice []float64){
-	// / / hsChart.Data = slice
-	hsChart.Data = make([]float64, len(slice))
-	copy(hsChart.Data, slice)
-
-	//Copy used in SelectionSort
-	copyArr := make([]float64, len(slice))
-	copy(copyArr, hsChart.Data)
-
-	//Channel
-	pairsChannel := make(chan []int, 1000)
-	go quickSort(&copyArr, pairsChannel)
-
-	//Update Changes in pairs
-	for pair := range pairsChannel{
-		swap(&hsChart.Data[pair[0]], &hsChart.Data[pair[1]])
-		m.Lock()
-		ui.Render(&hsChart)
-		m.Unlock()
-	}
-
-	//End
-	hsChart.Title = "SelectionSort-Finalizado-" +
-		"Tiempo:"+strconv.FormatInt(hsTime.Milliseconds(),10)+"ms-" +
-		"Swaps:"+strconv.Itoa(hsSwaps)+"-" +
-		"Comparaciones:"+strconv.Itoa(hsComparisons)+"-"+
-		"Iteraciones:"+strconv.Itoa(hsIterations)
-	m.Lock()
-	ui.Render(&hsChart)
-	m.Unlock()
+	
+	//fmt.Println(slice)
+	//fmt.Println(ssChart.Data)
 }
 
 // / / / / / / Extra \ \ \ \ \ \
