@@ -115,27 +115,35 @@ func temporalRANDOM(n int) []float64{
 // Bubblesort >> New <<
 
 func bubbleSort(arr *[]float64, pair chan []int) {
+	initTime := time.Now() // Time Start
+
 	arr2 := *arr
 	len := len(arr2)
 
 	//Move through all elements
-	for i:= 0; i < len; i++ {
-		for j := 0; j < len-i-1; j++ {
+	for i:= 0; i < len; i++ { // COMPARISON HERE TOO????
+		for j := 0; j < len-i-1; j++ { // COMPARISON HERE TOO????
 			// Move from 0 to len-i-1 and swap if element is greater than the next one
 			if arr2[j] > arr2[j+1] {
 				arr2[j], arr2[j+1] = arr2[j+1], arr2[j]
 				pair <- []int{j, j+1}
-			}
-		}
+				bsSwaps++
+			}; bsComparisons++; bsIterations++
+		}; bsIterations++
 	}
 
 	//*arr = arr2 // Assign changes to original array
 	close(pair)
+
+	endTime := time.Now() // Time End
+	bsTime = endTime.Sub(initTime) // Total Time
 }
 
 // Selection (changes indexes)
 
 func selectionSort(arr *[]float64, pair chan []int) {
+	initTime := time.Now() // Time Start
+
 	arr2 := *arr
 	len := len(arr2)
 
@@ -145,21 +153,29 @@ func selectionSort(arr *[]float64, pair chan []int) {
 		for i := currentIndex + 1; i < len; i++ { // Get the index of the smallest value from the numbers to the right
 			if arr2[i] < arr2[indexMin] {
 				indexMin = i
-			}
+			}; ssComparisons++; ssIterations++
 		}
 
 		//Swap numbers
 		arr2[currentIndex], arr2[indexMin] = arr2[indexMin], arr2[currentIndex]
 		pair <- []int{currentIndex, indexMin}
+
+		ssSwaps++
+		ssIterations++
 	}
 
 	*arr = arr2 // Assign changes to original array
 	close(pair)
+
+	endTime := time.Now() // Time End
+	ssTime = endTime.Sub(initTime) // Total Time
 }
 
 // Insertion >> New <<
 
 func insertionSort(arr *[]float64, oneWay chan []int) {
+	initTime := time.Now() // Time Start
+
 	arr2 := *arr
 	len := len(arr2)
 
@@ -168,18 +184,28 @@ func insertionSort(arr *[]float64, oneWay chan []int) {
 		j := i-1
 
 		//Move greater elements of arr[0 .. i-1] to position ahead of current
+		isComparisons++ //isComparison????
 		for ; j >= 0 && key < arr2[j]; j--{
 			oneWay <- []int{j+1, int(arr2[j])}
 			arr2[j+1] = arr2[j]
+
+			isSwaps++
+			isIterations++
 		}
 
 		oneWay <- []int{j+1, int(key)}
 		arr2[j+1] = key
 
+		isSwaps++
+		isIterations++
 	}
+	
 
 	*arr = arr2 // Assign changes to original array
 	close(oneWay)
+	
+	endTime := time.Now() // Time End
+	isTime = endTime.Sub(initTime) // Total Time
 }
 
 // Quicksort [iterative for drawing]: https://www.geeksforgeeks.org/iterative-quick-sort/
@@ -195,12 +221,16 @@ func partition(arr *[]float64, low int, high int, pair chan []int) int { //
 			i++
 			arr2[i], arr2[j] = arr2[j], arr2[i] //Gets the lesser values to the left of the pivot
 			pair <- []int{i, j}
-		}
+
+			qsSwaps++
+		}; qsComparisons++; qsIterations++
 	}
 
 	//Swap pivot with the next element to i
 	arr2[i+1], arr2[high] = arr2[high], arr2[i+1]
 	pair <- []int{i+1, high}
+
+	qsSwaps++
 
 	*arr = arr2 // Assign changes to original array
 
@@ -208,6 +238,8 @@ func partition(arr *[]float64, low int, high int, pair chan []int) int { //
 }
 
 func quickSort(arr *[]float64, pair chan []int){
+	initTime := time.Now() // Time Start
+
 	low := 0; high := len(*arr) - 1
 	stack := make([]int, high+1) //Auxiliary stack
 
@@ -233,17 +265,22 @@ func quickSort(arr *[]float64, pair chan []int){
 			stack[top] = low
 			top++
 			stack[top] = pivot-1
-		}
+		}; qsComparisons++
 
 		if pivot+1 < high{
 			top++
 			stack[top] = pivot+1
 			top++
 			stack[top] = high
-		}
+		}; qsComparisons++
+
+		qsIterations++
 	}
 
 	close(pair)
+
+	endTime := time.Now() // Time End
+	qsTime = endTime.Sub(initTime) // Total Time
 }
 
 // Heapsort >> New << [iteraive just in case]: https://www.geeksforgeeks.org/iterative-heap-sort/
@@ -258,14 +295,20 @@ func buildMaxHeap(arr *[]float64, n int, pair chan []int){
 				arr2[j], arr2[(j-1)/2] = arr2[(j-1)/2], arr2[j]
 				pair <- []int{j, (j-1)/2}
 				j = (j-1)/2
-			}
-		}
+
+				hsSwaps++
+			}; hsIterations++
+		}; hsComparisons++
+
+		hsIterations++
 	}
 
 	*arr = arr2
 }
 
 func heapSort(arr *[]float64, pair chan []int){
+	initTime := time.Now() // Time Start
+
 	n := len(*arr)
 
 	buildMaxHeap(arr, n, pair)
@@ -273,27 +316,38 @@ func heapSort(arr *[]float64, pair chan []int){
 
 	for i := n-1; i > 0; i--{
 		arr2[0], arr2[i] = arr2[i], arr2[0] //swap first with last
+		pair <- []int{0, i}
 		j, index := 0, 0
 
-		for { 
+		hsSwaps++
+
+		for {
+			hsIterations++
+
 			index = 2 * j + 1
 
 			if index < (i - 1) && arr2[index] < arr2[index + 1]{
 				index++
-			}; if index < i && arr2[j] < arr2[index]{
+			}; hsComparisons+=2
+			if index < i && arr2[j] < arr2[index]{
 				arr2[j], arr2[index] = arr2[index], arr2[j]
 				pair <- []int{j, index}
-			}; j = index
 
+				hsSwaps++
+			}; j = index
+			hsComparisons++
 			if index >= i{
 				break
 			}
 			
-		}
+		}; hsIterations++
 	}
 
 	*arr = arr2
 	close(pair)
+
+	endTime := time.Now() // Time End
+	hsTime = endTime.Sub(initTime) // Total Time
 }
 
 
@@ -511,7 +565,7 @@ func hsChartDrawer(slice []float64){
 
 	//Channel
 	pairsChannel := make(chan []int, 1000)
-	go quickSort(&copyArr, pairsChannel)
+	go heapSort(&copyArr, pairsChannel)
 
 	//Update Changes in pairs
 	for pair := range pairsChannel{
@@ -522,7 +576,7 @@ func hsChartDrawer(slice []float64){
 	}
 
 	//End
-	hsChart.Title = "SelectionSort-Finalizado-" +
+	hsChart.Title = "HeapSort-Finalizado-" +
 		"Tiempo:"+strconv.FormatInt(hsTime.Milliseconds(),10)+"ms-" +
 		"Swaps:"+strconv.Itoa(hsSwaps)+"-" +
 		"Comparaciones:"+strconv.Itoa(hsComparisons)+"-"+
@@ -538,11 +592,4 @@ func swap (a *float64, b *float64){
 	temp := *a
 	*a = *b
 	*b = temp
-}
-
-func generateLabels(arr []float64) []string {
-	var labels = make([]string, len(arr))
-	for i := range arr {
-		labels[i] = strconv.Itoa(i)
-	}; return labels
 }
