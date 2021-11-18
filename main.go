@@ -1,9 +1,13 @@
 package main
 
+//go mod init main.go
+//go mod tidy
+
 import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -11,6 +15,9 @@ import (
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/lxn/win"
+
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
 )
 
 // Variables
@@ -98,7 +105,6 @@ func main(){
 	hsChartDrawer(arregloBase)
 
 	//Ending
-	//Sound ?
 	fmt.Scanln()
 	ui.Close()
 }
@@ -121,8 +127,8 @@ func bubbleSort(arr *[]float64, pair chan []int) {
 	len := len(arr2)
 
 	//Move through all elements
-	for i:= 0; i < len; i++ { // COMPARISON HERE TOO????
-		for j := 0; j < len-i-1; j++ { // COMPARISON HERE TOO????
+	for i:= 0; i < len; i++ {
+		for j := 0; j < len-i-1; j++ {
 			// Move from 0 to len-i-1 and swap if element is greater than the next one
 			if arr2[j] > arr2[j+1] {
 				arr2[j], arr2[j+1] = arr2[j+1], arr2[j]
@@ -447,6 +453,8 @@ func bsChartDrawer(slice []float64){
 		m.Unlock()
 	}
 
+	playSound()
+
 	//End
 	bsChart.Title = "BubbleSort-Finalizado-" +
 		"Tiempo:"+strconv.FormatInt(bsTime.Milliseconds(),10)+"ms-" +
@@ -478,6 +486,8 @@ func ssChartDrawer(slice []float64){
 		ui.Render(&ssChart)
 		m.Unlock()
 	}
+
+	playSound()
 
 	//End
 	ssChart.Title = "SelectionSort-Finalizado-" +
@@ -511,6 +521,8 @@ func isChartDrawer(slice []float64){
 		m.Unlock()
 	}
 
+	playSound()
+
 	//End
 	isChart.Title = "InsertionSort-Finalizado-" +
 		"Tiempo:"+strconv.FormatInt(isTime.Milliseconds(),10)+"ms-" +
@@ -542,6 +554,8 @@ func qsChartDrawer(slice []float64){
 		ui.Render(&qsChart)
 		m.Unlock()
 	}
+
+	playSound()
 
 	//End
 	qsChart.Title = "QuickSort-Finalizado-" +
@@ -575,6 +589,8 @@ func hsChartDrawer(slice []float64){
 		m.Unlock()
 	}
 
+	playSound()
+
 	//End
 	hsChart.Title = "HeapSort-Finalizado-" +
 		"Tiempo:"+strconv.FormatInt(hsTime.Milliseconds(),10)+"ms-" +
@@ -592,4 +608,11 @@ func swap (a *float64, b *float64){
 	temp := *a
 	*a = *b
 	*b = temp
+}
+
+func playSound(){
+	f, _ := os.Open("w.mpeg")
+	streamer, format, _ := mp3.Decode(f)
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	speaker.Play(streamer)
 }
