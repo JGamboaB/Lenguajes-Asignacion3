@@ -68,12 +68,7 @@ var (
 )
 
 func main(){
-	//Pedir n (intervalo 10 a 100)
-	//Semilla: entrada de datos por teclado o segundos y decimas del reloj del sistema
-	//Arreglo base
-
-	//arregloBase := temporalRANDOM(100)
-	fmt.Print("Indique la cantidad de numeros(Se recomienda 100 maximo para una visualizacion correcta): ")
+	fmt.Print("Indique la cantidad de numeros a generar dentro de un intervalo de 10 a 100 incluyendolos: ")
 
 	var size int
 	fmt.Scanln(&size)
