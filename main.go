@@ -617,3 +617,65 @@ func playSound(){
 	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
 	speaker.Play(streamer)
 }
+
+func randomSlice(size int, seed int, k int, period int) []float64 {
+	
+	// Validating "size"
+	
+	if size < 10 || size > 100 {
+		fmt.Println("El valor size es incorrecto")
+		return nil
+	}
+	
+	// Validating Seed
+	if seed < 11 || seed > 101 {
+		fmt.Println("El valor de la semilla es incorrecto")
+		return nil
+	}
+
+	for i := 2; i < seed; i++ {	// Prime Number
+		if seed % i == 0 {
+			fmt.Println("El valor de la semilla es incorrecto")
+			return nil
+		}
+	}
+
+	// Validating "k"
+	if k < 0 {
+		fmt.Println("El valor k es incorrecto")
+		return nil
+	}
+
+	// Validating "period"
+	if period < 2048 {
+		fmt.Println("El valor m es incorrecto")
+		return nil
+	}
+	
+	var slice = make([]float64, size)
+	multiplier := 8*k + 3	// 8k + 5 can also be used
+
+	/*
+	first := (multiplier * seed) % period
+	first = first % 30
+	*/
+
+	for i := 0; i < size; i++ {	// Generating the Array
+		num := (multiplier * seed) % period	// Main Algorithm, X = (multiplier * [seed or previous number]) % period
+		num = num % 30	// Changed to 0..29
+
+		/*
+		if num == first && i != 0{	// We can stop the loop to avoid repeating the pattern
+			slice = slice[:i]
+			break
+		}
+		*/
+		
+		slice[i] = float64(num)
+		seed = num	// Seed is now the previous number
+	}
+
+	fmt.Println("Resultado: ", slice)
+
+	return slice
+}
