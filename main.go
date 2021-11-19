@@ -132,7 +132,8 @@ func bubbleSort(arr *[]float64, pair chan []int) {
 			// Move from 0 to len-i-1 and swap if element is greater than the next one
 			if arr2[j] > arr2[j+1] {
 				arr2[j], arr2[j+1] = arr2[j+1], arr2[j]
-				pair <- []int{j, j+1}
+
+				pair <- []int{j, j+1} // Channel
 				bsSwaps++
 			}; bsComparisons++; bsIterations++
 		}; bsIterations++
@@ -164,7 +165,7 @@ func selectionSort(arr *[]float64, pair chan []int) {
 
 		//Swap numbers
 		arr2[currentIndex], arr2[indexMin] = arr2[indexMin], arr2[currentIndex]
-		pair <- []int{currentIndex, indexMin}
+		pair <- []int{currentIndex, indexMin} // Channel
 
 		ssSwaps++
 		ssIterations++
@@ -192,14 +193,14 @@ func insertionSort(arr *[]float64, oneWay chan []int) {
 		//Move greater elements of arr[0 .. i-1] to position ahead of current
 		isComparisons++ //isComparison????
 		for ; j >= 0 && key < arr2[j]; j--{
-			oneWay <- []int{j+1, int(arr2[j])}
+			oneWay <- []int{j+1, int(arr2[j])} // Channel
 			arr2[j+1] = arr2[j]
 
 			isSwaps++
 			isIterations++
 		}
 
-		oneWay <- []int{j+1, int(key)}
+		oneWay <- []int{j+1, int(key)} // Channel
 		arr2[j+1] = key
 
 		isSwaps++
@@ -226,7 +227,7 @@ func partition(arr *[]float64, low int, high int, pair chan []int) int { //
 		if arr2[j] <= pivot {
 			i++
 			arr2[i], arr2[j] = arr2[j], arr2[i] //Gets the lesser values to the left of the pivot
-			pair <- []int{i, j}
+			pair <- []int{i, j} // Channel
 
 			qsSwaps++
 		}; qsComparisons++; qsIterations++
@@ -234,7 +235,7 @@ func partition(arr *[]float64, low int, high int, pair chan []int) int { //
 
 	//Swap pivot with the next element to i
 	arr2[i+1], arr2[high] = arr2[high], arr2[i+1]
-	pair <- []int{i+1, high}
+	pair <- []int{i+1, high} // Channel
 
 	qsSwaps++
 
@@ -299,7 +300,7 @@ func buildMaxHeap(arr *[]float64, n int, pair chan []int){
 
 			for arr2[j] > arr2[(j-1)/2]{ //Swap until parent is smaller than child
 				arr2[j], arr2[(j-1)/2] = arr2[(j-1)/2], arr2[j]
-				pair <- []int{j, (j-1)/2}
+				pair <- []int{j, (j-1)/2} // Channel
 				j = (j-1)/2
 
 				hsSwaps++
@@ -322,7 +323,7 @@ func heapSort(arr *[]float64, pair chan []int){
 
 	for i := n-1; i > 0; i--{
 		arr2[0], arr2[i] = arr2[i], arr2[0] //swap first with last
-		pair <- []int{0, i}
+		pair <- []int{0, i} // Channel
 		j, index := 0, 0
 
 		hsSwaps++
@@ -337,7 +338,7 @@ func heapSort(arr *[]float64, pair chan []int){
 			}; hsComparisons+=2
 			if index < i && arr2[j] < arr2[index]{
 				arr2[j], arr2[index] = arr2[index], arr2[j]
-				pair <- []int{j, index}
+				pair <- []int{j, index} // Channel
 
 				hsSwaps++
 			}; j = index
